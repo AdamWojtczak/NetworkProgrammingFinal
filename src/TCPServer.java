@@ -10,7 +10,6 @@ import java.util.Scanner;
 
 public class TCPServer {
 	public static void main(String argv[]) throws Exception {
-//        boolean global_flag_end = false;
 		int global_threads_counter = 0;
 		Scanner scanner = new Scanner(System.in);
 		System.out.println("Listening to port 7 by standard, do you want to change it? (y/n) ");
@@ -20,14 +19,16 @@ public class TCPServer {
 			System.out.println("Insert port number: ");
 			port = scanner.nextInt();
 		}
+		//przygotowanie socketa czekajacego na polaczenie
 		ServerSocket welcomeSocket = new ServerSocket(port);
 		welcomeSocket.setReuseAddress(true);
 		while (true) {
 			System.out.println("Waiting for Client...");
 			global_threads_counter++;
+			//zaakceptowanie polaczenia
 			Socket connectionSocket = welcomeSocket.accept();
-			if (global_threads_counter > 3) {
-				System.out.println("There are 3 clients connected. No possibility to maintain another connection.");
+			if (global_threads_counter > 5) {
+				System.out.println("There are 5 clients connected. No possibility to maintain another connection.");
 				DataOutputStream outToClient = new DataOutputStream(connectionSocket.getOutputStream());
 				outToClient.write(-1);
 				outToClient.close();

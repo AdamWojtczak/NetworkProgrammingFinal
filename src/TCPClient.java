@@ -14,32 +14,36 @@ class TCPClient {
 	static DataOutputStream outToServer = null;
 	static BufferedReader inFromUser = null;
 	static DataInputStream inFromServer = null;
-	static boolean global_flag_end = true;
+	static boolean global_flag_end = false;
 	static Scanner scanner = null;
 	private String answer;
 	static int frequency = 1000;
 
 	public static void main(String argv[]) throws Exception {
 		startConnection("localhost");
-		int dateLengthInBytes = String.valueOf(now()).length();
-		while (global_flag_end) {
+		while (!global_flag_end) {
+			//pobranie czasu T1
 			long timeBefore = getNanos(now());
+			//wysłanie zapytania do serwera
 			askForTime();
-
-			long timeFromServer = getMessage(dateLengthInBytes);
+			//odebranie odpwoiedzi serwera, czas Tserv
+			long timeFromServer = getMessage();
+			//pobranie czasu T2=TCli
 			LocalDateTime timeAfter = now();
+			//zmiana jednostki czasu T2 na nanosekundy, potrzebuje tej daty zeby na koniec ja wyświetlić po sformatowaniu i dodaniu delty
 			long timeAfterInNanos = getNanos(timeAfter);
+			//Obliczanie delty
 			long delta  = timeFromServer + (timeAfterInNanos - timeBefore)/2 - timeAfterInNanos;
 			if (delta >= 0) {
+				//formatowanie wyswietlania delty w ms na 6 miejsc po przecinku
 				DecimalFormat df = new DecimalFormat("##0.000000");
 				System.out.println("Delta: " + df.format(delta/Double.valueOf(1000000)) + "ms");
-				System.out.println("Delta in long: " + delta + "ms");
-
+				//obliczanie nowej daty
 				LocalDateTime finalTime = timeAfter.plusNanos(delta);
-
+				//foramtowanie daty na ISO8601
 				System.out.println(isoFormatDateTime(finalTime));
 			}
-
+			//odczekanie frequency zadanego na start programu (10-1000ms)
 			waitFor(frequency);
 		}
 	}
@@ -72,6 +76,7 @@ class TCPClient {
 			inFromServer = new DataInputStream(clientSocket.getInputStream());
 		} catch (Exception e) {
 			System.out.println("Error caught while creating streams");
+			stopConnection();
 		}
 	}
 
@@ -116,12 +121,11 @@ class TCPClient {
 	}
 
 	public static void askForTime() throws IOException {
-//		System.out.println("Pytam o godzine serwera ");
 		System.out.println("+-----------------------------------+");
 		outToServer.write(1);
 	}
 
-	public static long getMessage(int bytesSent) throws IOException {
+	public static long getMessage() {
 		try {
 			long serverTime = inFromServer.readLong();
 			if (serverTime < 0) {
@@ -136,7 +140,7 @@ class TCPClient {
 	}
 
 	public static void stopConnection() {
-		global_flag_end = false;
+		global_flag_end = true;
 		try {
 			if (inFromUser != null)
 				inFromUser.close();
